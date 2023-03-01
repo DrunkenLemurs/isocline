@@ -1114,7 +1114,9 @@ static void term_init_raw(term_t* term) {
     }    
   }
   else {
+    #ifndef IC_NO_DEBUG_MSG
     DWORD err = GetLastError();
+    #endif
     debug_msg("term: cannot get console screen buffer: %d %x", err, err);
   }
   term_start_raw(term); // initialize the hcon_mode

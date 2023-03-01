@@ -1,17 +1,20 @@
 # -----------------------------------------------------------------------------
 # Copyright (c) 2021, Daan Leijen
 # -----------------------------------------------------------------------------
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.15)
 project(libisocline C CXX ASM)
 
 set(CMAKE_C_STANDARD   99)
+set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 option(IC_USE_CXX           "Build with C++ compiler" OFF)
 option(IC_DEBUG_UBSAN       "Build with undefined behaviour sanitizer" OFF)
 option(IC_DEBUG_ASAN        "Build with address sanitizer" OFF)
 option(IC_DEBUG_MSG         "Enable printing debug messages stderr (only if also ISOCLINE_DEBUG=1 is set in the environment)" ON)
 option(IC_SEPARATE_OBJS     "Compile with separate object files instead of one (warning: exports internal symbols)" OFF)
+option(IC_TESTS             "Build tests" ON)
 
 set(ic_version "0.1")
 set(ic_sources          src/isocline.c)    
@@ -22,7 +25,8 @@ set(ic_example_sources  test/example.c test/test_colors.c)
 # -----------------------------------------------------------------------------
 set(ic_cflags)
 set(ic_cdefs)
-set(ic_install_dir)
+
+include(GNUInstallDirs)
 
 if(IC_SEPARATE_OBJS)
   list(APPEND ic_cdefs IC_SEPARATE_OBJS)
@@ -44,10 +48,12 @@ endif()
 
 if(IC_USE_CXX)
   set(IC_COMPILER_ID "${CMAKE_CXX_COMPILER_ID}")
+  set(IC_SIMULATE_ID "${CMAKE_CXX_SIMULATE_ID}")
   set_source_files_properties(${ic_sources}         PROPERTIES LANGUAGE CXX )
   set_source_files_properties(${ic_example_sources} PROPERTIES LANGUAGE CXX )
 else()
   set(IC_COMPILER_ID "${CMAKE_C_COMPILER_ID}")  
+  set(IC_SIMULATE_ID "${CMAKE_C_SIMULATE_ID}")
 endif()
 
 if(NOT IC_DEBUG_MSG)
@@ -99,9 +105,15 @@ endif()
 # -----------------------------------------------------------------------------
 # Flags
 # -----------------------------------------------------------------------------
-
-if (IC_COMPILER_ID MATCHES "AppleClang|Clang|GNU|Intel")
-  list(APPEND ic_cflags -Wall -Wextra -Wpedantic -Wno-unknown-pragmas -Wno-unused-function -Wno-padded -Wno-missing-field-initializers)
+if (IC_COMPILER_ID MATCHES "MSVC")
+  list(APPEND ic_cflags /W4)
+elseif (IC_COMPILER_ID MATCHES "AppleClang|Clang|GNU|Intel")
+  if (IC_SIMULATE_ID MATCHES "MSVC") # clang-cl maps -Wall to /Wall which is NOT the same  
+    list(APPEND ic_cflags /W4)
+  else()
+    list(APPEND ic_cflags -Wall -Wextra)
+  endif()
+  list(APPEND ic_cflags -Wno-unknown-pragmas -Wno-unused-function -Wno-padded -Wno-missing-field-initializers)
   if (IC_COMPILER_ID MATCHES "AppleClang|Clang")
     list(APPEND ic_cflags -Wimplicit-int-conversion -Wsign-conversion)
   endif()
@@ -130,13 +142,12 @@ endif()
 # -----------------------------------------------------------------------------
 
 message(STATUS "")
-message(STATUS "Library   : libisocline")
+message(STATUS "Library   : isocline")
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 message(STATUS "Compiler  : ${IC_COMPILER_ID}")
 message(STATUS "Defines   : ${ic_cdefs}")
 # message(STATUS "Flags     : ${ic_cflags}")
 message(STATUS "")
-
 
 # -----------------------------------------------------------------------------
 # Static library (libisocline.a) and samples (example)
@@ -148,15 +159,21 @@ target_compile_options(isocline PRIVATE ${ic_cflags})
 target_compile_definitions(isocline PRIVATE ${ic_cdefs})
 target_include_directories(isocline PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:${ic_install_dir}/include>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 
-add_executable(example test/example.c)
-target_compile_options(example PRIVATE ${ic_cflags})
-target_include_directories(example PRIVATE include)
-target_link_libraries(example PRIVATE isocline)
+if (IC_TESTS)
+  add_executable(example test/example.c)
+  target_compile_options(example PRIVATE ${ic_cflags})
+  target_include_directories(example PRIVATE include)
+  target_link_libraries(example PRIVATE isocline)
 
-add_executable(test_colors test/test_colors.c)
-target_compile_options(test_colors PRIVATE ${ic_cflags})
-target_include_directories(test_colors PRIVATE include)
-target_link_libraries(test_colors PRIVATE isocline)
+  add_executable(test_colors test/test_colors.c)
+  target_compile_options(test_colors PRIVATE ${ic_cflags})
+  target_include_directories(test_colors PRIVATE include)
+  target_link_libraries(test_colors PRIVATE isocline)
+endif()
+
+install(TARGETS isocline EXPORT isocline ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+install(EXPORT isocline DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/isocline)
+install(FILES include/isocline.h DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")

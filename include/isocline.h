@@ -459,14 +459,14 @@ bool ic_starts_with( const char* s, const char* prefix );
 bool ic_istarts_with( const char* s, const char* prefix );
 
 
-/// Convenience: character class for whitespace `[ \t\r\n]`.
+/// Convenience: character class for whitespace `[ \\t\\r\\n]`.
 bool ic_char_is_white(const char* s, long len);
 
-/// Convenience: character class for non-whitespace `[^ \t\r\n]`.
+/// Convenience: character class for non-whitespace `[^ \\t\\r\\n]`.
 bool ic_char_is_nonwhite(const char* s, long len);
 
 /// Convenience: character class for separators.
-/// (``[ \t\r\n,.;:/\\(){}\[\]]``.)
+/// (``[ \\t\\r\\n,.;:/\\(){}\[\]]``.)
 /// This is used for word boundaries in isocline.
 bool ic_char_is_separator(const char* s, long len);
 
@@ -485,7 +485,7 @@ bool ic_char_is_hexdigit(const char* s, long len);
 /// Convenience: character class for identifier letters (`[A-Za-z0-9_-]` and any unicode > 0x80).
 bool ic_char_is_idletter(const char* s, long len);
 
-/// Convenience: character class for filename letters (_not in_ " \t\r\n`@$><=;|&\{\}\(\)\[\]]").
+/// Convenience: character class for filename letters (_not in_ " \\t\\r\\n`@$><=;|&\{\}\(\)\[\]]").
 bool ic_char_is_filename_letter(const char* s, long len);
 
 

@@ -91,7 +91,7 @@ static bool sgr_next_par3(const char* s, ssize_t* pi, ssize_t* p1, ssize_t* p2, 
       i++;
       if (sgr_next_par(s,&i,p3)) {
         ok = true;
-      };
+      }
     }
   }
   *pi = i;
